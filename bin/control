@@ -87,13 +87,6 @@ function build() {
     echo "Building Ruby cartridge"
     update-configuration $OPENSHIFT_RUBY_VERSION
 
-    if ruby_in_development_mode; then
-      if ! gemfile_modified; then
-        echo "Skipping 'bundle install' because development mode is enabled..."
-        return 0
-      fi
-    fi
-
     USED_BUNDLER=false
     if [ -d $OPENSHIFT_RUBY_DIR/tmp/.bundle ]
     then
@@ -116,6 +109,12 @@ function build() {
     # If .bundle isn't currently committed and a Gemfile is then bundle install
     if [ -f ${OPENSHIFT_REPO_DIR}/Gemfile ]
     then
+        if ruby_in_development_mode; then
+          if ! gemfile_modified; then
+            echo "Skipping 'bundle install' because development mode is enabled..."
+            return 0
+          fi
+        fi
         pushd "${OPENSHIFT_HOMEDIR}/git/${OPENSHIFT_APP_NAME}.git" 1>/dev/null
           if ! git show master:.bundle > /dev/null 2>&1
           then
@@ -124,6 +123,7 @@ function build() {
                 SAVED_GIT_DIR=$GIT_DIR
                 unset GIT_DIR
                 ruby_context "bundle install --deployment"
+                update_gemfile_sum
                 export GIT_DIR=$SAVED_GIT_DIR
               popd 1> /dev/null
           fi
