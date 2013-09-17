@@ -11,21 +11,28 @@ HTTPD_PID_FILE=$OPENSHIFT_RUBY_DIR/run/httpd.pid
 function start() {
     if process_running 'httpd', $HTTPD_PID_FILE; then
       if ruby_in_development_mode; then
-        echo "Ruby cartridge in development mode, skipping start..."
-        ensure_httpd_in_correct_env
-        return 0
+        if httpd_in_development_mode; then
+          echo "Ruby cartridge in development mode, skipping start..."
+          return 0
+        else
+          update_ruby_env
+        fi
+      else
+        update_ruby_env
       fi
     fi
     echo "Starting Ruby cartridge"
     write_httpd_passenv $HTTPD_PASSENV_FILE
     ensure_valid_httpd_process "$HTTPD_PID_FILE" "$HTTPD_CFG_FILE"
-    ruby_context "/usr/sbin/httpd -C 'Include $OPENSHIFT_RUBY_DIR/etc/conf.d/*.conf' -f $HTTPD_CFG_FILE -k start"
+    ruby_context "RAILS_ENV=${RAILS_ENV:-production} /usr/sbin/httpd -C 'Include $OPENSHIFT_RUBY_DIR/etc/conf.d/*.conf' -f $HTTPD_CFG_FILE -k start"
 }
 
 function stop() {
     if ruby_in_development_mode; then
-      echo "Ruby cartridge in development mode, skipping stop..."
-      return 0
+      if httpd_in_development_mode; then
+        echo "Ruby cartridge in development mode, skipping stop..."
+        return 0
+      fi
     fi
     echo "Stopping Ruby cartridge"
     ensure_valid_httpd_process "$HTTPD_PID_FILE" "$HTTPD_CFG_FILE"
@@ -41,6 +48,7 @@ function restart() {
     write_httpd_passenv $HTTPD_PASSENV_FILE
     touch $OPENSHIFT_REPO_DIR/tmp/restart.txt
     ensure_httpd_restart_succeed "$HTTPD_PID_FILE" "$HTTPD_CFG_FILE"
+    export RAILS_ENV="$RAILS_ENV"
     ruby_context "/usr/sbin/httpd -C 'Include $OPENSHIFT_RUBY_DIR/etc/conf.d/*.conf' -f $HTTPD_CFG_FILE -k restart"
 }
 
