@@ -12,6 +12,7 @@ function start() {
     if process_running 'httpd', $HTTPD_PID_FILE; then
       if ruby_in_development_mode; then
         echo "Ruby cartridge in development mode, skipping start..."
+        ensure_httpd_in_correct_env
         return 0
       fi
     fi
