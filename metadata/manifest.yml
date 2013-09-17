@@ -16,7 +16,7 @@ Compatible-Versions:
 - 0.0.4
 - 0.0.5
 - 0.0.6
-Cartridge-Vendor: redhat
+Cartridge-Vendor: mfojtik
 Categories:
 - service
 - ruby
